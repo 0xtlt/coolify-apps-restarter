@@ -1,0 +1,32 @@
+version: '3.8'
+
+services:
+  coolify-restarter:
+    build: .
+    container_name: coolify-apps-restarter
+    environment:
+      # Replace these with your actual values or use .env file
+      - COOLIFY_TOKEN=${COOLIFY_TOKEN}
+      - WEBHOOK_URLS=${WEBHOOK_URLS}
+      - CRON_SCHEDULE=${CRON_SCHEDULE:-0 */6 * * *}
+    restart: unless-stopped
+    # Optional: Add logging configuration
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    # Optional: Add resource limits
+    deploy:
+      resources:
+        limits:
+          memory: 128M
+        reservations:
+          memory: 64M
+    # Optional: Add health check
+    healthcheck:
+      test: ["CMD", "pgrep", "-f", "bun.*index.ts"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
