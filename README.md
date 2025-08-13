@@ -92,6 +92,7 @@ services:
 | `WEBHOOK_URLS` | Comma-separated webhook URLs | ✅ | - |
 | `CRON_SCHEDULE` | Cron expression for scheduling | ❌ | `0 */6 * * *` |
 | `DEPLOY_ON_START` | Trigger deployment on app startup (true/false, on/off, yes/no, 1/0) | ❌ | `false` |
+| `FORCE` | Force rebuild without cache by adding force=true to URLs (true/false, on/off, yes/no, 1/0) | ❌ | `false` |
 
 ### Getting Coolify API Token
 

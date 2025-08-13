@@ -5,6 +5,7 @@ interface Config {
   webhookUrls: string[];
   cronSchedule: string;
   deployOnStart: boolean;
+  force: boolean;
 }
 
 class CoolifyAppsRestarter {
@@ -16,9 +17,10 @@ class CoolifyAppsRestarter {
 
   async pingWebhook(url: string): Promise<void> {
     try {
-      console.log(`🔄 Pinging webhook: ${url}`);
+      const finalUrl = this.config.force ? this.addForceParam(url) : url;
+      console.log(`🔄 Pinging webhook: ${finalUrl}`);
       
-      const response = await fetch(url, {
+      const response = await fetch(finalUrl, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${this.config.coolifyToken}`,
@@ -27,7 +29,8 @@ class CoolifyAppsRestarter {
       });
 
       if (response.ok) {
-        console.log(`✅ Successfully triggered deployment for: ${url}`);
+        const forceText = this.config.force ? ' (force rebuild)' : '';
+        console.log(`✅ Successfully triggered deployment for: ${url}${forceText}`);
       } else {
         console.error(`❌ Failed to trigger deployment for: ${url} - Status: ${response.status}`);
       }
@@ -36,8 +39,20 @@ class CoolifyAppsRestarter {
     }
   }
 
+  private addForceParam(url: string): string {
+    try {
+      const urlObj = new URL(url);
+      urlObj.searchParams.set('force', 'true');
+      return urlObj.toString();
+    } catch (error) {
+      console.warn(`⚠️ Invalid URL format: ${url}, using as-is`);
+      return url + (url.includes('?') ? '&' : '?') + 'force=true';
+    }
+  }
+
   async restartAllApps(): Promise<void> {
-    console.log(`🚀 Starting deployment restart for ${this.config.webhookUrls.length} apps...`);
+    const forceText = this.config.force ? ' with force rebuild' : '';
+    console.log(`🚀 Starting deployment restart for ${this.config.webhookUrls.length} apps${forceText}...`);
     
     const promises = this.config.webhookUrls.map(url => this.pingWebhook(url));
     await Promise.all(promises);
@@ -70,6 +85,8 @@ function loadConfig(): Config {
   const cronSchedule = process.env.CRON_SCHEDULE || '0 */6 * * *'; // Default: every 6 hours
   const deployOnStartStr = process.env.DEPLOY_ON_START?.trim().toLowerCase() || 'false';
   const deployOnStart = ['true', 'on', 'yes', '1'].includes(deployOnStartStr); // Default: false
+  const forceStr = process.env.FORCE?.trim().toLowerCase() || 'false';
+  const force = ['true', 'on', 'yes', '1'].includes(forceStr); // Default: false
 
   if (!coolifyToken) {
     throw new Error('COOLIFY_TOKEN environment variable is required');
@@ -86,6 +103,7 @@ function loadConfig(): Config {
     webhookUrls,
     cronSchedule,
     deployOnStart,
+    force,
   };
 }
 
