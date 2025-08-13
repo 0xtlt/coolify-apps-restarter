@@ -4,6 +4,7 @@ interface Config {
   coolifyToken: string;
   webhookUrls: string[];
   cronSchedule: string;
+  deployOnStart: boolean;
 }
 
 class CoolifyAppsRestarter {
@@ -44,9 +45,15 @@ class CoolifyAppsRestarter {
     console.log('🎉 All deployment webhooks have been triggered!');
   }
 
-  start(): void {
+  async start(): Promise<void> {
     console.log(`⏰ Scheduler started with cron pattern: ${this.config.cronSchedule}`);
     console.log(`📡 Monitoring ${this.config.webhookUrls.length} webhook URLs`);
+    
+    // Trigger deployment on start if enabled
+    if (this.config.deployOnStart) {
+      console.log('🚀 Deploy on start enabled - triggering initial deployment...');
+      await this.restartAllApps();
+    }
     
     cron.schedule(this.config.cronSchedule, async () => {
       console.log(`\n🕐 ${new Date().toISOString()} - Executing scheduled restart...`);
@@ -61,6 +68,8 @@ function loadConfig(): Config {
   const coolifyToken = process.env.COOLIFY_TOKEN;
   const webhookUrlsStr = process.env.WEBHOOK_URLS;
   const cronSchedule = process.env.CRON_SCHEDULE || '0 */6 * * *'; // Default: every 6 hours
+  const deployOnStartStr = process.env.DEPLOY_ON_START?.trim().toLowerCase() || 'false';
+  const deployOnStart = ['true', 'on', 'yes', '1'].includes(deployOnStartStr); // Default: false
 
   if (!coolifyToken) {
     throw new Error('COOLIFY_TOKEN environment variable is required');
@@ -76,6 +85,7 @@ function loadConfig(): Config {
     coolifyToken,
     webhookUrls,
     cronSchedule,
+    deployOnStart,
   };
 }
 
@@ -83,7 +93,7 @@ async function main() {
   try {
     const config = loadConfig();
     const restarter = new CoolifyAppsRestarter(config);
-    restarter.start();
+    await restarter.start();
   } catch (error) {
     console.error('❌ Failed to start Coolify Apps Restarter:', error);
     process.exit(1);
