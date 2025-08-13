@@ -6,8 +6,10 @@ A lightweight Bun application that automatically restarts your Coolify applicati
 
 - **Automated Scheduling**: Uses cron expressions to schedule app restarts
 - **Multiple App Support**: Restart multiple applications with a single configuration
+- **Dual Deployment Methods**: Choose between webhook URLs or Coolify API with app UUIDs
 - **Webhook Integration**: Leverages Coolify's deployment webhooks for reliable restarts
-- **Parallel Execution**: Triggers all webhooks simultaneously for faster execution
+- **API Integration**: Direct Coolify API integration using instance URL and app UUIDs
+- **Parallel Execution**: Triggers all deployments simultaneously for faster execution
 - **Environment Configuration**: Secure configuration through environment variables
 - **Docker Support**: Run anywhere with Docker containerization
 - **Error Handling**: Robust error handling with detailed logging
@@ -39,10 +41,20 @@ A lightweight Bun application that automatically restarts your Coolify applicati
    cp .env.example .env
    ```
    
-   Edit `.env` with your configuration:
+   Edit `.env` with your configuration (choose one deployment method):
+   
+   **Option 1 - Using Webhook URLs:**
    ```env
    COOLIFY_TOKEN=your_coolify_api_token_here
    WEBHOOK_URLS=https://your-coolify.com/webhooks/app1,https://your-coolify.com/webhooks/app2
+   CRON_SCHEDULE=0 */6 * * *
+   ```
+   
+   **Option 2 - Using Coolify API:**
+   ```env
+   COOLIFY_TOKEN=your_coolify_api_token_here
+   COOLIFY_API_URL=https://your-coolify.com/api/v1
+   COOLIFY_APP_UUIDS=uuid1,uuid2,uuid3
    CRON_SCHEDULE=0 */6 * * *
    ```
 
@@ -58,7 +70,9 @@ A lightweight Bun application that automatically restarts your Coolify applicati
    docker build -t coolify-apps-restarter .
    ```
 
-2. **Run the container**:
+2. **Run the container** (choose one deployment method):
+
+   **Option 1 - Using Webhook URLs:**
    ```bash
    docker run -d \
      --name coolify-restarter \
@@ -68,8 +82,20 @@ A lightweight Bun application that automatically restarts your Coolify applicati
      coolify-apps-restarter
    ```
 
+   **Option 2 - Using Coolify API:**
+   ```bash
+   docker run -d \
+     --name coolify-restarter \
+     -e COOLIFY_TOKEN="your_token_here" \
+     -e COOLIFY_API_URL="https://your-coolify.com/api/v1" \
+     -e COOLIFY_APP_UUIDS="uuid1,uuid2,uuid3" \
+     -e CRON_SCHEDULE="0 */6 * * *" \
+     coolify-apps-restarter
+   ```
+
 ### Docker Compose
 
+**Option 1 - Using Webhook URLs:**
 ```yaml
 version: '3.8'
 services:
@@ -82,6 +108,20 @@ services:
     restart: unless-stopped
 ```
 
+**Option 2 - Using Coolify API:**
+```yaml
+version: '3.8'
+services:
+  coolify-restarter:
+    build: .
+    environment:
+      - COOLIFY_TOKEN=your_token_here
+      - COOLIFY_API_URL=https://your-coolify.com/api/v1
+      - COOLIFY_APP_UUIDS=uuid1,uuid2,uuid3
+      - CRON_SCHEDULE=0 */6 * * *
+    restart: unless-stopped
+```
+
 ## ⚙️ Configuration
 
 ### Environment Variables
@@ -89,11 +129,15 @@ services:
 | Variable | Description | Required | Default |
 |----------|-------------|----------|---------|
 | `COOLIFY_TOKEN` | Your Coolify API token | ✅ | - |
-| `WEBHOOK_URLS` | Comma-separated webhook URLs | ✅ | - |
+| `WEBHOOK_URLS` | Comma-separated webhook URLs | ⚠️* | - |
+| `COOLIFY_API_URL` | Coolify API base URL (e.g., https://your-coolify.com/api/v1) | ⚠️* | - |
+| `COOLIFY_APP_UUIDS` | Comma-separated app UUIDs for API-based deployment | ⚠️* | - |
 | `CRON_SCHEDULE` | Cron expression for scheduling | ❌ | `0 */6 * * *` |
 | `DEPLOY_ON_START` | Trigger deployment on app startup (true/false, on/off, yes/no, 1/0) | ❌ | `false` |
-| `FORCE` | Force rebuild without cache by adding force=true to URLs (true/false, on/off, yes/no, 1/0) | ❌ | `false` |
+| `FORCE` | Force rebuild without cache (true/false, on/off, yes/no, 1/0) | ❌ | `false` |
 | `DEBUG` | Enable detailed logging of requests/responses (true/false, on/off, yes/no, 1/0) | ❌ | `false` |
+
+**\*** At least one deployment method must be configured: either `WEBHOOK_URLS` or both `COOLIFY_API_URL` + `COOLIFY_APP_UUIDS`.
 
 ### Getting Coolify API Token
 
@@ -107,13 +151,23 @@ services:
 
 > **Note**: The token needs **Deploy** permission to successfully trigger deployment webhooks.
 
-### Getting Coolify Webhooks
+### Getting Coolify Webhooks (Option 1)
 
 1. Navigate to your Coolify dashboard
 2. Select the application you want to restart
 3. Go to **Settings** → **Webhooks**
 4. Copy the deployment webhook URL
 5. Repeat for each application
+
+### Getting App UUIDs for API (Option 2)
+
+1. Navigate to your Coolify dashboard
+2. Select the application you want to restart
+3. The UUID is visible in the browser URL: `https://your-coolify.com/application/{uuid}`
+4. Copy the UUID from the URL
+5. Repeat for each application
+6. Set `COOLIFY_API_URL` to your Coolify API base URL (e.g., `https://your-coolify.com/api/v1`)
+7. Set `COOLIFY_APP_UUIDS` to comma-separated list of UUIDs
 
 ### Cron Schedule Examples
 
