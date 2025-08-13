@@ -6,6 +6,7 @@ interface Config {
   cronSchedule: string;
   deployOnStart: boolean;
   force: boolean;
+  debug: boolean;
 }
 
 class CoolifyAppsRestarter {
@@ -20,6 +21,13 @@ class CoolifyAppsRestarter {
       const finalUrl = this.config.force ? this.addForceParam(url) : url;
       console.log(`🔄 Pinging webhook: ${finalUrl}`);
       
+      if (this.config.debug) {
+        console.log(`🐛 [DEBUG] Request headers:`, {
+          'Authorization': `Bearer ${this.config.coolifyToken.substring(0, 10)}...`,
+          'Content-Type': 'application/json',
+        });
+      }
+      
       const response = await fetch(finalUrl, {
         method: 'POST',
         headers: {
@@ -28,11 +36,23 @@ class CoolifyAppsRestarter {
         },
       });
 
+      if (this.config.debug) {
+        console.log(`🐛 [DEBUG] Response status: ${response.status} ${response.statusText}`);
+        console.log(`🐛 [DEBUG] Response headers:`, Object.fromEntries(response.headers.entries()));
+        
+        const responseText = await response.clone().text();
+        console.log(`🐛 [DEBUG] Response body:`, responseText || '(empty)');
+      }
+
       if (response.ok) {
         const forceText = this.config.force ? ' (force rebuild)' : '';
         console.log(`✅ Successfully triggered deployment for: ${url}${forceText}`);
       } else {
         console.error(`❌ Failed to trigger deployment for: ${url} - Status: ${response.status}`);
+        if (!this.config.debug) {
+          const errorText = await response.text();
+          console.error(`❌ Error response:`, errorText || '(empty response)');
+        }
       }
     } catch (error) {
       console.error(`❌ Error pinging webhook ${url}:`, error);
@@ -64,6 +84,18 @@ class CoolifyAppsRestarter {
     console.log(`⏰ Scheduler started with cron pattern: ${this.config.cronSchedule}`);
     console.log(`📡 Monitoring ${this.config.webhookUrls.length} webhook URLs`);
     
+    if (this.config.debug) {
+      console.log(`🐛 [DEBUG] Configuration:`, {
+        webhookCount: this.config.webhookUrls.length,
+        cronSchedule: this.config.cronSchedule,
+        deployOnStart: this.config.deployOnStart,
+        force: this.config.force,
+        debug: this.config.debug,
+        tokenPreview: this.config.coolifyToken.substring(0, 10) + '...'
+      });
+      console.log(`🐛 [DEBUG] Webhook URLs:`, this.config.webhookUrls);
+    }
+    
     // Trigger deployment on start if enabled
     if (this.config.deployOnStart) {
       console.log('🚀 Deploy on start enabled - triggering initial deployment...');
@@ -87,6 +119,8 @@ function loadConfig(): Config {
   const deployOnStart = ['true', 'on', 'yes', '1'].includes(deployOnStartStr); // Default: false
   const forceStr = process.env.FORCE?.trim().toLowerCase() || 'false';
   const force = ['true', 'on', 'yes', '1'].includes(forceStr); // Default: false
+  const debugStr = process.env.DEBUG?.trim().toLowerCase() || 'false';
+  const debug = ['true', 'on', 'yes', '1'].includes(debugStr); // Default: false
 
   if (!coolifyToken) {
     throw new Error('COOLIFY_TOKEN environment variable is required');
@@ -104,6 +138,7 @@ function loadConfig(): Config {
     cronSchedule,
     deployOnStart,
     force,
+    debug,
   };
 }
 
