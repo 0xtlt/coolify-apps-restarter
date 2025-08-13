@@ -98,8 +98,11 @@ services:
 2. Go to **Settings** → **API Tokens**
 3. Click **+ New Token**
 4. Give your token a descriptive name (e.g., "Apps Restarter")
-5. Copy the generated token immediately (it won't be shown again)
-6. Use this token as your `COOLIFY_TOKEN` environment variable
+5. **Select permissions**: Make sure to enable **Deploy** permission (required for triggering webhooks)
+6. Copy the generated token immediately (it won't be shown again)
+7. Use this token as your `COOLIFY_TOKEN` environment variable
+
+> **Note**: The token needs **Deploy** permission to successfully trigger deployment webhooks.
 
 ### Getting Coolify Webhooks
 
