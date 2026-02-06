@@ -14,8 +14,8 @@ RUN bun install --frozen-lockfile --production
 COPY . .
 
 # Create a non-root user for security
-RUN addgroup --system --gid 1001 coolify && \
-    adduser --system --uid 1001 coolify --ingroup coolify
+RUN groupadd --system --gid 1001 coolify && \
+    useradd --system --uid 1001 --gid coolify --no-create-home coolify
 
 # Change ownership of the app directory
 RUN chown -R coolify:coolify /app
