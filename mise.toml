@@ -1,0 +1,8 @@
+[tools]
+bun = "1.4.3"
+
+[tasks.lint]
+run = "bun run lint"
+
+[tasks.build]
+run = "bun run build"
