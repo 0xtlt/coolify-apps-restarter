@@ -1,11 +1,11 @@
 # Use the official Bun image as base
-FROM oven/bun:1 AS base
+FROM oven/bun:1.4.3 AS base
 
 # Set working directory
 WORKDIR /app
 
 # Copy package files
-COPY package.json bun.lockb* ./
+COPY package.json bun.lock ./
 
 # Install dependencies
 RUN bun install --frozen-lockfile --production
